@@ -4,9 +4,11 @@ const envSchema = z.object({
   // Database
   DATABASE_URL: z.string().min(1),
 
-  // Clerk
-  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().min(1),
-  CLERK_SECRET_KEY: z.string().min(1),
+  // NextAuth / Google OAuth
+  GOOGLE_CLIENT_ID: z.string().min(1),
+  GOOGLE_CLIENT_SECRET: z.string().min(1),
+  NEXTAUTH_URL: z.string().url().optional().default('http://localhost:3000'),
+  NEXTAUTH_SECRET: z.string().min(1),
 
   // Stripe
   STRIPE_SECRET: z.string().min(1),
