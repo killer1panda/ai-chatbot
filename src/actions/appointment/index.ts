@@ -1,7 +1,7 @@
 'use server'
-
 import { client } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 
 export const onDomainCustomerResponses = async (customerId: string) => {
   try {
@@ -121,7 +121,7 @@ export const onCreateDashboardBooking = async (
   date: string
 ) => {
   try {
-    const session = await auth()
+    const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
       return { status: 401, message: 'Unauthorized' }
@@ -228,7 +228,7 @@ export const onCreateDashboardBooking = async (
 
 export const onCancelDashboardBooking = async (bookingId: string) => {
   try {
-    const session = await auth()
+    const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
       return { status: 401, message: 'Unauthorized' }
@@ -273,7 +273,7 @@ export const onRescheduleDashboardBooking = async (
   date: string
 ) => {
   try {
-    const session = await auth()
+    const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
       return { status: 401, message: 'Unauthorized' }
@@ -430,7 +430,7 @@ export const onGetAllBookingsForCurrentUser = async (id: string) => {
 
 export const getUserAppointments = async () => {
   try {
-    const session = await auth()
+    const session = await getServerSession(authOptions)
     if (session?.user?.id) {
       const bookings = await client.bookings.count({
         where: {

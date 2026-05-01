@@ -1,7 +1,7 @@
 'use server'
-
 import { client } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 import Stripe from 'stripe'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET!, {
@@ -11,7 +11,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET!, {
 
 export const getUserClients = async () => {
   try {
-    const session = await auth()
+    const session = await getServerSession(authOptions)
     if (!session?.user?.id) return
 
     return client.customer.count({
@@ -28,7 +28,7 @@ export const getUserClients = async () => {
 
 export const getUserBalance = async () => {
   try {
-    const session = await auth()
+    const session = await getServerSession(authOptions)
     if (!session?.user?.id) return
 
     const connectedStripe = await client.user.findUnique({
@@ -53,7 +53,7 @@ export const getUserBalance = async () => {
 
 export const getUserPlanInfo = async () => {
   try {
-    const session = await auth()
+    const session = await getServerSession(authOptions)
     if (!session?.user?.id) return
 
     const plan = await client.user.findUnique({
@@ -78,7 +78,7 @@ export const getUserPlanInfo = async () => {
 
 export const getUserTotalProductPrices = async () => {
   try {
-    const session = await auth()
+    const session = await getServerSession(authOptions)
     if (!session?.user?.id) return
 
     const products = await client.product.findMany({
@@ -100,7 +100,7 @@ export const getUserTotalProductPrices = async () => {
 
 export const getUserTransactions = async () => {
   try {
-    const session = await auth()
+    const session = await getServerSession(authOptions)
     if (!session?.user?.id) return
 
     const connectedStripe = await client.user.findUnique({

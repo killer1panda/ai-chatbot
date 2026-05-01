@@ -1,7 +1,7 @@
 'use server'
-
 import { client } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 import Stripe from 'stripe'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET!, {
@@ -37,7 +37,7 @@ export const onUpdateSubscription = async (
   plan: 'STANDARD' | 'PRO' | 'ULTIMATE'
 ) => {
   try {
-    const session = await auth()
+    const session = await getServerSession(authOptions)
     if (!session?.user?.id) return
     const update = await client.user.update({
       where: {

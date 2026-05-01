@@ -8,7 +8,8 @@ import Section from '@/components/section-label'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { auth } from '@/lib/auth'
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 import React from 'react'
 
 import AppointmentCalendar from '@/components/appointment/calendar'
@@ -16,7 +17,7 @@ import AppointmentCalendar from '@/components/appointment/calendar'
 type Props = {}
 
 const Page = async (props: Props) => {
-  const session = await auth()
+  const session = await getServerSession(authOptions)
 
   if (!session?.user?.id)
     return (

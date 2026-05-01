@@ -1,8 +1,8 @@
 import { client } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
-
-export const dynamic = 'force-dynamic'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET!, {
   typescript: true,
@@ -11,13 +11,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET!, {
 
 export async function GET() {
   try {
-    // During build, auth might not be available
-    if (typeof window === 'undefined' && !process.env.NODE_ENV) {
-      return new NextResponse('Auth not available during build', { status: 503 })
-    }
-
-    const { auth } = await import('@/lib/auth')
-    const session = await auth()
+    const session = await getServerSession(authOptions)
     if (!session?.user?.id)
       return new NextResponse('User not authenticated', {
         status: 401,
@@ -134,8 +128,7 @@ export async function GET() {
                 if (saveAccountId) {
                   const accountLink = await stripe.accountLinks.create({
                     account: account.id,
-                    refresh_url:
-                      `${process.env.NEXT_PUBLIC_APP_URL}/callback/stripe/refresh`,
+                    refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}/callback/stripe/refresh`,
                     return_url: `${process.env.NEXT_PUBLIC_APP_URL}/callback/stripe/success`,
                     type: 'account_onboarding',
                     collection_options: {

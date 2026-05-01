@@ -1,9 +1,10 @@
 'use server'
 import { client } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 
 export const onIntegrateDomain = async (domain: string, icon: string) => {
-  const session = await auth()
+  const session = await getServerSession(authOptions)
   if (!session?.user?.id) return { status: 401, message: 'Not authenticated' }
 
   try {
@@ -67,7 +68,7 @@ export const onIntegrateDomain = async (domain: string, icon: string) => {
 }
 
 export const onGetSubscriptionPlan = async () => {
-  const session = await auth()
+  const session = await getServerSession(authOptions)
   if (!session?.user?.id) return
 
   const plan = await client.user.findUnique({
@@ -79,7 +80,7 @@ export const onGetSubscriptionPlan = async () => {
 }
 
 export const onGetAllAccountDomains = async () => {
-  const session = await auth()
+  const session = await getServerSession(authOptions)
   if (!session?.user?.id) return
 
   return client.user.findUnique({
@@ -110,7 +111,7 @@ export const onUpdatePassword = async (password: string) => {
 }
 
 export const onGetCurrentDomainInfo = async (domain: string) => {
-  const session = await auth()
+  const session = await getServerSession(authOptions)
   if (!session?.user?.id) return
 
   return client.user.findUnique({
@@ -159,7 +160,7 @@ export const onUpdateDomain = async (id: string, name: string) => {
 }
 
 export const onChatBotImageUpdate = async (id: string, icon: string) => {
-  const session = await auth()
+  const session = await getServerSession(authOptions)
   if (!session?.user?.id) return
 
   try {
@@ -205,7 +206,7 @@ export const onUpdateWelcomeMessage = async (message: string, domainId: string) 
 }
 
 export const onDeleteUserDomain = async (id: string) => {
-  const session = await auth()
+  const session = await getServerSession(authOptions)
   if (!session?.user?.id) return
 
   try {
@@ -318,7 +319,7 @@ export const onGetAllFilterQuestions = async (id: string) => {
 }
 
 export const onGetPaymentConnected = async () => {
-  const session = await auth()
+  const session = await getServerSession(authOptions)
   if (!session?.user?.id) return
 
   const connected = await client.user.findUnique({

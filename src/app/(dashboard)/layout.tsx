@@ -1,12 +1,13 @@
 export const dynamic = 'force-dynamic'
-import { auth } from '@/lib/auth'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { client } from '@/lib/prisma'
 import SideBar from '@/components/sidebar'
 import { ChatProvider } from '@/context/user-chat-context'
 import { redirect } from 'next/navigation'
 
 const OwnerLayout = async ({ children }: { children: React.ReactNode }) => {
-  const session = await auth()
+  const session = await getServerSession(authOptions)
 
   if (!session?.user?.id) {
     redirect('/auth/sign-in')

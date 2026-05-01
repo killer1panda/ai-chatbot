@@ -1,28 +1,37 @@
-// import { auth } from '@/lib/auth'
 import { NextResponse } from 'next/server'
 
-export default async function middleware(req: any) {
-  const { nextUrl } = req
+export const runtime = 'experimental-edge'
+
+export default async function middleware(req: Request) {
+  const url = new URL(req.url)
+  const pathname = url.pathname
 
   // Skip auth during build/static generation
   if (typeof window === 'undefined' && !req.headers.get('user-agent')) {
     return NextResponse.next()
   }
 
-  // Temporarily bypass auth for build compatibility
-  // TODO: Re-enable auth after NextAuth build issues are resolved
-  return NextResponse.next()
-
-  /*
   try {
-    const { auth } = await import('@/lib/auth')
-    const session = await auth()
-    const isLoggedIn = !!session?.user?.id
-    const isApiAuthRoute = nextUrl.pathname.startsWith('/api/auth')
-    const isPublicRoute = ['/', '/auth/sign-in', '/portal', '/chatbot', '/images'].some(
-      (route) => nextUrl.pathname.startsWith(route)
+    const cookieHeader = req.headers.get('cookie') || ''
+    const sessionToken = cookieHeader.split('session=')[1]?.split(';')[0]
+    let isLoggedIn = false
+    
+    if (sessionToken) {
+      try {
+        const sessionData = JSON.parse(Buffer.from(sessionToken, 'base64').toString())
+        if (sessionData.expires > Date.now()) {
+          isLoggedIn = true
+        }
+      } catch (e) {
+        isLoggedIn = false
+      }
+    }
+
+    const isApiAuthRoute = pathname.startsWith('/api/auth')
+    const isPublicRoute = ['/', '/auth', '/portal', '/chatbot', '/images', '/blogs', '/dashboard'].some(
+      (route) => pathname.startsWith(route)
     )
-    const isAuthRoute = nextUrl.pathname.startsWith('/auth')
+    const isAuthRoute = pathname.startsWith('/auth')
 
     if (isApiAuthRoute) {
       return NextResponse.next()
@@ -30,22 +39,27 @@ export default async function middleware(req: any) {
 
     if (isAuthRoute) {
       if (isLoggedIn) {
-        return NextResponse.redirect(new URL('/dashboard', nextUrl))
+        if (pathname === '/dashboard' || pathname.startsWith('/dashboard/')) {
+          return NextResponse.next()
+        }
+        return NextResponse.redirect(new URL('/dashboard', url))
       }
       return NextResponse.next()
     }
 
-    if (!isLoggedIn && !isPublicRoute) {
-      return NextResponse.redirect(new URL('/auth/sign-in', nextUrl))
+    if (isPublicRoute) {
+      return NextResponse.next()
+    }
+
+    if (!isLoggedIn) {
+      return NextResponse.redirect(new URL('/auth/sign-in', url))
     }
 
     return NextResponse.next()
   } catch (error) {
-    // Fallback during build or auth errors
     console.error('Middleware error:', error)
     return NextResponse.next()
   }
-  */
 }
 
 export const config = {

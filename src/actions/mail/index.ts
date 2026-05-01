@@ -1,7 +1,7 @@
 'use server'
-
 import { client } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 import nodemailer from 'nodemailer'
 
 export const onGetAllCustomers = async (id: string) => {
@@ -69,7 +69,7 @@ export const onGetAllCampaigns = async (id: string) => {
 
 export const onCreateMarketingCampaign = async (name: string) => {
   try {
-    const session = await auth()
+    const session = await getServerSession(authOptions)
     if (!session?.user?.id) return null
 
     const campaign = await client.user.update({
@@ -136,7 +136,7 @@ export const onAddCustomersToEmail = async (
 
 export const onBulkMailer = async (email: string[], campaignId: string) => {
   try {
-    const session = await auth()
+    const session = await getServerSession(authOptions)
     if (!session?.user?.id) return null
 
     //get the template for this campaign
@@ -198,7 +198,7 @@ export const onBulkMailer = async (email: string[], campaignId: string) => {
 
 export const onGetAllCustomerResponses = async (id: string) => {
   try {
-    const session = await auth()
+    const session = await getServerSession(authOptions)
     if (!session?.user?.id) return null
     const answers = await client.user.findUnique({
       where: {

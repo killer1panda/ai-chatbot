@@ -1,11 +1,11 @@
 'use server'
-
 import { client } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 import { redirect } from 'next/navigation'
 
 export const onGetCurrentUser = async () => {
-  const session = await auth()
+  const session = await getServerSession(authOptions)
   if (!session?.user?.id) return null
 
   return client.user.findUnique({
@@ -27,7 +27,7 @@ export const onGetCurrentUser = async () => {
 }
 
 export const onLoginUser = async () => {
-  const session = await auth()
+  const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
     redirect('/auth/sign-in')
   }

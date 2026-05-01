@@ -1,54 +1,82 @@
+import NextAuth from 'next-auth'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import { client } from './prisma'
-import NextAuth from 'next-auth'
 import Google from 'next-auth/providers/google'
+import type { Adapter } from 'next-auth/adapters'
 
-// Build-time safe exports
-export const handlers = {
-  GET: () => new Response('Auth not available during build', { status: 503 }),
-  POST: () => new Response('Auth not available during build', { status: 503 })
-}
-
-export const auth = () => Promise.resolve({ user: { id: 'build-user' } } as any)
-export const signIn = () => Promise.resolve()
-export const signOut = () => Promise.resolve()
-
-// Only initialize NextAuth at runtime, not during build
-if (typeof window !== 'undefined' || process.env.NODE_ENV === 'development') {
-  // Dynamic import to avoid build-time issues
-  import('next-auth').then(({ default: NextAuth }) => {
-    import('next-auth/providers/google').then(({ default: Google }) => {
-      const runtimeAuth = NextAuth({
-        providers: [
-          Google({
-            clientId: process.env.GOOGLE_CLIENT_ID!,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-          }),
-        ],
-        pages: {
-          signIn: '/auth/sign-in',
-          error: '/auth/sign-in',
+export const authOptions = {
+  adapter: PrismaAdapter(client) as unknown as Adapter,
+  providers: [
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID ?? '',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
+      authorization: {
+        params: {
+          prompt: 'consent',
+          access_type: 'offline',
+          response_type: 'code',
         },
-        callbacks: {
-          async session({ session, user }: { session: any, user: any }) {
-            return {
-              ...session,
-              user: {
-                ...session.user,
-                id: user.id,
+      },
+    }),
+  ],
+  pages: {
+    signIn: '/auth/sign-in',
+    error: '/auth/sign-in',
+  },
+  callbacks: {
+    async jwt({ token, user }: { token: any; user?: any }) {
+      if (user) {
+        token.id = user.id
+      }
+      return token
+    },
+    async session({ session, token }: { session: any; token: any }) {
+      if (session.user && token?.id) {
+        ;(session.user as any).id = token.id
+      }
+      return session
+    },
+    async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
+      if (url.startsWith('/')) {
+        return `${baseUrl}${url}`
+      }
+      if (url.startsWith(baseUrl)) {
+        return url
+      }
+      return baseUrl
+    },
+    async signIn({ user, account, profile }: { user: any; account: any; profile?: any }) {
+      if (account?.provider === 'google') {
+        try {
+          if (!user.email) {
+            console.error('Google OAuth did not return an email')
+            return false
+          }
+          await client.user.upsert({
+            where: { email: user.email },
+            update: {},
+            create: {
+              email: user.email,
+              name: user.name ?? 'Anonymous User',
+              image: user.image ?? null,
+              subscription: {
+                create: {
+                  plan: 'STANDARD',
+                  credits: 0,
+                },
               },
-            }
-          },
-        },
-      })
-
-      // Override exports at runtime
-      Object.assign(handlers, runtimeAuth.handlers)
-      Object.assign(auth, runtimeAuth.auth)
-      Object.assign(signIn, runtimeAuth.signIn)
-      Object.assign(signOut, runtimeAuth.signOut)
-    })
-  }).catch(() => {
-    // Silently fail during build
-  })
+            },
+          })
+        } catch (error) {
+          console.error('Error in signIn callback:', error)
+          return false
+        }
+      }
+      return true
+    },
+  },
 }
+
+export default NextAuth(authOptions)
+
+export { getServerSession } from 'next-auth'
